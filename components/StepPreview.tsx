@@ -19,10 +19,10 @@ const StepPreview: React.FC<StepPreviewProps> = ({ files, onReset }) => {
     // Open PDF in new tab - this is the most reliable way to trigger browser print for PDFs
     const printWindow = window.open(file.url, '_blank');
     if (printWindow) {
-        // Attempt to print automatically if not blocked
-        printWindow.addEventListener('load', () => {
-            printWindow.print();
-        });
+      // Attempt to print automatically if not blocked
+      printWindow.addEventListener('load', () => {
+        printWindow.print();
+      });
     }
   };
 
@@ -55,53 +55,53 @@ const StepPreview: React.FC<StepPreviewProps> = ({ files, onReset }) => {
   return (
     <div className="max-w-4xl mx-auto py-8">
       <div className="text-center mb-10">
-        <div className="bg-green-100 p-4 rounded-full inline-block mb-4 shadow-sm">
-          <CheckCircle className="w-12 h-12 text-green-600" />
+        <div className="bg-industrial-800 border border-industrial-700 p-4 rounded-full inline-block mb-4 shadow-xl">
+          <CheckCircle className="w-12 h-12 text-industrial-orange" />
         </div>
-        <h2 className="text-3xl font-bold text-slate-900 mb-2">Documents Ready!</h2>
-        <p className="text-slate-600">
+        <h2 className="text-3xl font-bold text-white mb-2 font-mono uppercase tracking-tight">Documents Ready!</h2>
+        <p className="text-slate-400 font-mono">
           Your extracted data has been successfully applied to {files.length} document{files.length !== 1 && 's'}.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
         {files.map((file, idx) => (
-          <div key={idx} className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="bg-slate-50 p-4 border-b border-slate-100 flex items-center justify-between">
+          <div key={idx} className="bg-industrial-900 rounded-xl shadow-2xl border border-industrial-700 overflow-hidden hover:border-industrial-orange/50 transition-colors group">
+            <div className="bg-industrial-800 p-4 border-b border-industrial-700 flex items-center justify-between">
               <div className="flex items-center space-x-3 truncate">
-                <div className="bg-blue-600 p-2 rounded-lg shrink-0">
-                  <FileText className="w-5 h-5 text-white" />
+                <div className="bg-industrial-700 p-2 rounded shrink-0">
+                  <FileText className="w-5 h-5 text-industrial-orange" />
                 </div>
-                <span className="font-semibold text-slate-700 truncate" title={file.name}>{file.name}</span>
+                <span className="font-semibold text-white truncate font-mono" title={file.name}>{file.name}</span>
               </div>
             </div>
-            
+
             <div className="p-6 space-y-3">
-              <button 
+              <button
                 onClick={() => handlePrint(file)}
-                className="w-full flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-900 text-white py-2.5 rounded-lg font-medium transition-colors"
+                className="w-full flex items-center justify-center space-x-2 bg-industrial-orange hover:bg-orange-600 text-white py-2.5 rounded font-medium transition-colors font-mono uppercase tracking-wide shadow-lg shadow-orange-900/20"
               >
                 <Printer className="w-4 h-4" />
                 <span>Print Document</span>
               </button>
 
               <div className="grid grid-cols-2 gap-3 pt-2">
-                <button 
+                <button
                   onClick={() => handleDownloadPdf(file)}
-                  className="flex items-center justify-center space-x-2 border border-slate-300 hover:border-blue-400 hover:bg-blue-50 text-slate-700 py-2 rounded-lg text-sm font-medium transition-all"
+                  className="flex items-center justify-center space-x-2 border border-industrial-600 hover:border-industrial-orange hover:bg-industrial-800 text-slate-300 hover:text-white py-2 rounded text-sm font-medium transition-all font-mono"
                 >
-                  <FileText className="w-4 h-4 text-red-500" />
+                  <FileText className="w-4 h-4 text-slate-400 group-hover:text-red-400 decoration-slice" />
                   <span>PDF</span>
                 </button>
-                <button 
+                <button
                   onClick={() => handleDownloadJpg(file)}
                   disabled={processingFile === file.name}
-                  className="flex items-center justify-center space-x-2 border border-slate-300 hover:border-blue-400 hover:bg-blue-50 text-slate-700 py-2 rounded-lg text-sm font-medium transition-all"
+                  className="flex items-center justify-center space-x-2 border border-industrial-600 hover:border-industrial-orange hover:bg-industrial-800 text-slate-300 hover:text-white py-2 rounded text-sm font-medium transition-all font-mono"
                 >
                   {processingFile === file.name ? (
-                     <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                    <Loader2 className="w-4 h-4 animate-spin text-industrial-orange" />
                   ) : (
-                     <ImageIcon className="w-4 h-4 text-blue-500" />
+                    <ImageIcon className="w-4 h-4 text-slate-400 group-hover:text-blue-400" />
                   )}
                   <span>JPG</span>
                 </button>
@@ -112,9 +112,9 @@ const StepPreview: React.FC<StepPreviewProps> = ({ files, onReset }) => {
       </div>
 
       <div className="flex justify-center">
-        <button 
+        <button
           onClick={onReset}
-          className="flex items-center space-x-2 text-slate-500 hover:text-blue-600 px-6 py-3 rounded-xl font-medium transition-colors"
+          className="flex items-center space-x-2 text-slate-500 hover:text-white px-6 py-3 rounded font-medium transition-colors font-mono"
         >
           <RefreshCw className="w-5 h-5" />
           <span>Process New Documents</span>

@@ -39,16 +39,17 @@ const StepUpload: React.FC<StepUploadProps> = ({ title, description, accept, onF
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
+    <div className="max-w-2xl mx-auto bg-industrial-800 rounded-xl shadow-2xl border border-industrial-700 p-8 text-center">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">{title}</h2>
-        <p className="text-slate-600">{description}</p>
+        <h2 className="text-2xl font-bold text-white mb-2 font-mono">{title}</h2>
+        <p className="text-slate-400">{description}</p>
       </div>
 
       <div
-        className={`relative group rounded-2xl border-2 border-dashed transition-all duration-200 ease-in-out p-12 flex flex-col items-center justify-center cursor-pointer ${
-          dragActive ? 'border-blue-500 bg-blue-50' : 'border-slate-300 hover:border-blue-400 hover:bg-slate-50'
-        }`}
+        className={`relative group rounded border-2 border-dashed transition-all duration-300 ease-in-out p-12 flex flex-col items-center justify-center cursor-pointer ${dragActive
+            ? 'border-industrial-orange bg-industrial-orange/10'
+            : 'border-industrial-700 hover:border-industrial-orange/50 hover:bg-industrial-900'
+          }`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
@@ -66,40 +67,40 @@ const StepUpload: React.FC<StepUploadProps> = ({ title, description, accept, onF
 
         {isProcessing ? (
           <div className="flex flex-col items-center animate-pulse">
-            <Loader2 className="w-16 h-16 text-blue-600 animate-spin mb-4" />
-            <p className="text-lg font-medium text-blue-700">Analyzing Document...</p>
-            <p className="text-sm text-blue-500 mt-1">Extracting data with Gemini AI</p>
+            <Loader2 className="w-16 h-16 text-industrial-orange animate-spin mb-4" />
+            <p className="text-lg font-medium text-industrial-orange font-mono">Processing Document...</p>
+            <p className="text-sm text-slate-400 mt-1">Initializing extraction protocols...</p>
           </div>
         ) : (
           <>
-            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <div className="w-16 h-16 bg-industrial-900 border border-industrial-700 text-industrial-orange rounded-full flex items-center justify-center mb-4 group-hover:scale-110 group-hover:border-industrial-orange transition-all duration-300 shadow-lg">
               <Upload className="w-8 h-8" />
             </div>
-            <p className="text-lg font-medium text-slate-700 mb-1">
+            <p className="text-lg font-medium text-slate-200 mb-1">
               Click to upload or drag and drop
             </p>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-slate-500 font-mono">
               Supported files: {accept.replace(/\./g, ' ').toUpperCase()}
             </p>
           </>
         )}
       </div>
 
-      <div className="mt-8 flex items-center justify-center space-x-8 text-sm text-slate-500">
+      <div className="mt-8 flex items-center justify-center space-x-8 text-sm text-slate-500 font-mono">
         <div className="flex items-center space-x-2">
-          <FileImage className="w-4 h-4" />
-          <span>High Quality Extraction</span>
+          <FileImage className="w-4 h-4 text-industrial-orange" />
+          <span>High Definition</span>
         </div>
         <div className="flex items-center space-x-2">
-          <FileType className="w-4 h-4" />
-          <span>Smart Form Matching</span>
+          <FileType className="w-4 h-4 text-industrial-orange" />
+          <span>Smart Detection</span>
         </div>
       </div>
-      
+
       {accept.includes('pdf') && (
-        <div className="mt-4 p-4 bg-amber-50 text-amber-800 rounded-lg text-sm flex items-start text-left">
-           <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
-           <p>Make sure your PDF is a <strong>Fillable Form</strong>. Standard "flat" PDFs cannot be automatically filled without advanced OCR overlay.</p>
+        <div className="mt-4 p-4 bg-industrial-900 border border-industrial-700 text-slate-300 rounded text-sm flex items-start text-left">
+          <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0 text-industrial-orange" />
+          <p>Ensure PDF is a <strong>Fillable Form</strong> for extraction protocols to function correctly.</p>
         </div>
       )}
     </div>

@@ -31,7 +31,7 @@ export const saveTemplate = async (name: string, data: Uint8Array): Promise<Stor
     id,
     name,
     createdAt: Date.now(),
-    data: data.buffer // Store as ArrayBuffer
+    data: data.buffer as ArrayBuffer // Store as ArrayBuffer
   };
 
   return new Promise((resolve, reject) => {
@@ -57,7 +57,7 @@ export const saveTemplateSettings = async (id: string, mappings: FieldMapping[],
       if (record) {
         record.savedMappings = mappings;
         if (filenamePattern) {
-            record.filenamePattern = filenamePattern;
+          record.filenamePattern = filenamePattern;
         }
         const putRequest = store.put(record);
         putRequest.onsuccess = () => resolve();
@@ -75,23 +75,24 @@ export const getTemplates = async (): Promise<StoredTemplate[]> => {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, "readonly");
     const store = transaction.objectStore(STORE_NAME);
-    // We only need metadata, but getAll fetches everything. 
-    // For a small app, this is fine. For larger, we'd use a cursor to strip 'data'.
-    const request = store.getAll();
+    const templates: StoredTemplate[] = [];
 
-    request.onsuccess = () => {
-      const records = request.result as TemplateRecord[];
-      // Return without the heavy data payload
-      const templates = records.map(({ id, name, createdAt, savedMappings, filenamePattern }) => ({ 
-        id, 
-        name, 
-        createdAt,
-        savedMappings,
-        filenamePattern
-      }));
-      // Sort by newest first
-      resolve(templates.sort((a, b) => b.createdAt - a.createdAt));
+    // Use a cursor to iterate and only grab metadata
+    // This avoids loading the heavy 'data' (ArrayBuffer) into memory for the list view
+    const request = store.openCursor();
+
+    request.onsuccess = (event) => {
+      const cursor = (event.target as IDBRequest).result as IDBCursorWithValue;
+      if (cursor) {
+        const { id, name, createdAt, savedMappings, filenamePattern } = cursor.value as TemplateRecord;
+        templates.push({ id, name, createdAt, savedMappings, filenamePattern });
+        cursor.continue();
+      } else {
+        // Sort by newest first
+        resolve(templates.sort((a, b) => b.createdAt - a.createdAt));
+      }
     };
+
     request.onerror = () => reject(request.error);
   });
 };

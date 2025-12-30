@@ -1,84 +1,58 @@
-import { GoogleGenAI, Type, Schema } from "@google/genai";
+
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ExtractedData, FieldMapping } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Initialize the API using the stable SDK
+const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
-const DATA_SCHEMA: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    // Customer
-    customerName: { type: Type.STRING, description: "Full name of the client or business receiving the service" },
-    customerAddress: { type: Type.STRING, description: "Full billing or service address of the customer" },
-    customerPhone: { type: Type.STRING, description: "Phone number of the customer" },
-    
-    // Company (Vendor)
-    companyName: { type: Type.STRING, description: "Name of the service provider company issuing the document" },
-    companyAddress: { type: Type.STRING, description: "Address of the service provider company" },
-    companyPhone: { type: Type.STRING, description: "Phone number of the service provider company" },
-    companyEmail: { type: Type.STRING, description: "Email address of the service provider company" },
+// Use a model confirmed to be available for this key
+const MODEL_NAME = "gemini-2.0-flash";
 
-    // Financials
-    serviceDate: { type: Type.STRING, description: "Date of service or invoice date (YYYY-MM-DD)" },
-    invoiceNumber: { type: Type.STRING, description: "Invoice, estimate, or work order number" },
-    subtotal: { type: Type.NUMBER, description: "Subtotal amount before tax" },
-    tax: { type: Type.NUMBER, description: "Tax amount" },
-    total: { type: Type.NUMBER, description: "Grand total amount" },
-    notes: { type: Type.STRING, description: "Any special instructions, notes, or terms" },
-    
-    // Items
-    lineItems: {
-      type: Type.ARRAY,
-      description: "List of services or parts provided",
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          description: { type: Type.STRING },
-          quantity: { type: Type.NUMBER },
-          unitPrice: { type: Type.NUMBER },
-          amount: { type: Type.NUMBER },
-        }
-      }
-    }
-  },
-  required: ["customerName", "total", "lineItems"]
-};
+// Helper to clean JSON string if Markdown code blocks are included
+function cleanJsonString(text: string): string {
+  return text.replace(/```json\n?|\n?```/g, "").trim();
+}
 
 export async function extractDataFromDocument(base64DataUrl: string, mimeType: string): Promise<ExtractedData> {
   // Strip the data URL prefix if present (e.g., "data:image/jpeg;base64," or "data:application/pdf;base64,")
   const base64Data = base64DataUrl.split(',')[1] || base64DataUrl;
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: {
-        parts: [
-          {
-            inlineData: {
-              mimeType: mimeType,
-              data: base64Data
-            }
-          },
-          {
-            text: "You are an expert data entry assistant for an HVAC/Plumbing business. Extract all data from this document. Capture the Customer's details AND the Company/Vendor's details explicitly. If a field is missing, leave it as an empty string or 0. Ensure currency values are numbers."
-          }
-        ]
-      },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: DATA_SCHEMA,
-        temperature: 0.1, // Low temperature for factual extraction
-      }
-    });
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
-    const text = response.text;
+    const prompt = "You are an expert data entry assistant for an HVAC/Plumbing business. Extract all data from this document. Capture the Customer's details AND the Company/Vendor's details explicitly. If a field is missing, leave it as an empty string or 0. Ensure currency values are numbers. Return a valid JSON object matching the schema: { customerName, customerAddress, customerPhone, companyName, companyAddress, companyPhone, companyEmail, serviceDate, invoiceNumber, subtotal, tax, total, notes, lineItems: [{ description, quantity, unitPrice, amount }] }";
+
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          mimeType: mimeType,
+          data: base64Data
+        }
+      }
+    ]);
+
+    const response = await result.response;
+    const text = response.text();
+
     if (!text) {
       throw new Error("No data returned from Gemini");
     }
 
-    return JSON.parse(text) as ExtractedData;
-  } catch (error) {
+    const cleanedText = cleanJsonString(text);
+    return JSON.parse(cleanedText) as ExtractedData;
+
+  } catch (error: any) {
     console.error("Gemini Extraction Error:", error);
-    throw new Error("Failed to extract data from the document.");
+
+    // Bubble up the actual error message
+    const message = error.message || error.toString();
+
+    if (message.includes("403")) throw new Error("Access Denied (403): Invalid API Key.");
+    if (message.includes("429")) throw new Error("Rate Limited (429): Too many requests.");
+    if (message.includes("400")) throw new Error("Bad Request (400): Unsupported file or invalid request.");
+
+    throw new Error(`Extraction Failed: ${message}`);
   }
 }
 
@@ -95,37 +69,25 @@ export async function smartMapFields(pdfFields: string[], dataKeys: string[]): P
     Task:
     Create a mapping where each relevant PDF field is assigned one Data Key.
     - Match loosely based on meaning (e.g. "BillTo_Name" -> "customerName", "Vendor_Name" -> "companyName").
+    - PRIORITIZE exact matches.
+    - If a PDF field asks for "Total", map to "total". If "Subtotal", map to "subtotal".
     - "lineItems" should be mapped to the main description or table area of the PDF.
     - Ignore PDF fields that don't have a corresponding data key.
     
-    Return ONLY a JSON array of objects with this structure:
+    Return ONLY a valid JSON array of objects with this structure:
     [ { "pdfFieldName": "string", "extractedKey": "string" } ]
   `;
 
   try {
-     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: { parts: [{ text: prompt }] },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              pdfFieldName: { type: Type.STRING },
-              extractedKey: { type: Type.STRING }
-            },
-            required: ["pdfFieldName", "extractedKey"]
-          }
-        }
-      }
-    });
-    
-    const text = response.text;
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
     if (!text) return [];
-    
-    return JSON.parse(text) as FieldMapping[];
+
+    const cleanedText = cleanJsonString(text);
+    return JSON.parse(cleanedText) as FieldMapping[];
   } catch (error) {
     console.error("Smart mapping failed", error);
     return [];
